@@ -11,13 +11,13 @@ import networkx as nx
 
 def splitData(dataset, cv):
     DIR = os.path.join(os.getcwd(), "dataset", dataset)
-    with open(DIR + "/category.csv", 'rb') as fs:
+    with open(DIR + "/category.pkl", 'rb') as fs:
         category = pickle.load(fs)
-    with open(DIR + "/ratings.csv", 'rb') as fs:
+    with open(DIR + "/ratings.pkl", 'rb') as fs:
         data = pickle.load(fs)
-    with open(DIR + "/times.csv", 'rb') as fs:
+    with open(DIR + "/times.pkl", 'rb') as fs:
         time = pickle.load(fs)
-    with open(DIR + "/trust.csv", 'rb') as fs:
+    with open(DIR + "/trust.pkl", 'rb') as fs:
         trust = pickle.load(fs)
     assert np.sum(data.tocoo().row != time.tocoo().row) == 0
     assert np.sum(data.tocoo().col != time.tocoo().col) == 0
@@ -72,38 +72,38 @@ def splitData(dataset, cv):
     print("test num = %d, test rate = %.2f"%(test.nnz, test.nnz/data.nnz))
     print("valid num = %d, valid rate = %.2f"%(valid.nnz, valid.nnz/data.nnz))
 
-    with open(DIR + "/implicit/train.csv", 'wb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'wb') as fs:
         pickle.dump(train.tocsr(), fs)
-    with open(DIR + "/implicit/train_time.csv", 'wb') as fs:
+    with open(DIR + "/implicit/train_time.pkl", 'wb') as fs:
         pickle.dump(train_time.tocsr(), fs)
 
-    with open(DIR + "/implicit/test.csv", 'wb') as fs:
+    with open(DIR + "/implicit/test.pkl", 'wb') as fs:
         pickle.dump(test.tocsr(), fs)
-    with open(DIR + "/implicit/valid.csv", 'wb') as fs:
+    with open(DIR + "/implicit/valid.pkl", 'wb') as fs:
         pickle.dump(valid.tocsr(), fs)
 
-    with open(DIR + "/implicit/trust.csv", 'wb') as fs:
+    with open(DIR + "/implicit/trust.pkl", 'wb') as fs:
         pickle.dump(trust.tocsr(), fs)
-    with open(DIR + "/implicit/category.csv", 'wb') as fs:
+    with open(DIR + "/implicit/category.pkl", 'wb') as fs:
         pickle.dump(category.tocsr(), fs)
 
 
 def filterData(dataset, cv):
     DIR = os.path.join(os.getcwd(), "dataset", dataset)
     #filter
-    with open(DIR + "/implicit/train.csv", 'rb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'rb') as fs:
         train = pickle.load(fs)
-    with open(DIR + "/implicit/test.csv", 'rb') as fs:
+    with open(DIR + "/implicit/test.pkl", 'rb') as fs:
         test = pickle.load(fs)
-    with open(DIR + "/implicit/valid.csv", 'rb') as fs:
+    with open(DIR + "/implicit/valid.pkl", 'rb') as fs:
         valid = pickle.load(fs)
-    with open(DIR + "/implicit/category.csv", 'rb') as fs:
+    with open(DIR + "/implicit/category.pkl", 'rb') as fs:
         category = pickle.load(fs)
 
-    with open(DIR + "/implicit/train_time.csv", 'rb') as fs:
+    with open(DIR + "/implicit/train_time.pkl", 'rb') as fs:
         train_time = pickle.load(fs)
 
-    with open(DIR + "/implicit/trust.csv", 'rb') as fs:
+    with open(DIR + "/implicit/trust.pkl", 'rb') as fs:
         trust = pickle.load(fs)
 
     trust = trust + trust.transpose()
@@ -143,29 +143,29 @@ def filterData(dataset, cv):
     print("test num = %d, test rate = %.2f"%(test.nnz, test.nnz/nums))
     print("valid num = %d, valid rate = %.2f"%(valid.nnz, valid.nnz/nums))
 
-    with open(DIR + "/implicit/train.csv", 'wb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'wb') as fs:
         pickle.dump(train, fs)
-    with open(DIR + "/implicit/test.csv", 'wb') as fs:
+    with open(DIR + "/implicit/test.pkl", 'wb') as fs:
         pickle.dump(test, fs)
-    with open(DIR + "/implicit/valid.csv", 'wb') as fs:
+    with open(DIR + "/implicit/valid.pkl", 'wb') as fs:
         pickle.dump(valid, fs)
-    with open(DIR + "/implicit/train_time.csv", 'wb') as fs:
+    with open(DIR + "/implicit/train_time.pkl", 'wb') as fs:
         pickle.dump(train_time, fs)
-    with open(DIR + "/implicit/trust.csv", 'wb') as fs:
+    with open(DIR + "/implicit/trust.pkl", 'wb') as fs:
         pickle.dump(trust, fs)
-    with open(DIR + "/implicit/category.csv", 'wb') as fs:
+    with open(DIR + "/implicit/category.pkl", 'wb') as fs:
         pickle.dump(category, fs)
 
 def splitAgain(dataset, cv):
     DIR = os.path.join(os.getcwd(), "dataset", dataset)
-    with open(DIR + "/implicit/train.csv", 'rb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'rb') as fs:
         train = pickle.load(fs)
-    with open(DIR + "/implicit/test.csv", 'rb') as fs:
+    with open(DIR + "/implicit/test.pkl", 'rb') as fs:
         test = pickle.load(fs)
     print(train.nnz)
     print(test.nnz)
 
-    with open(DIR + "/implicit/train_time.csv", 'rb') as fs:
+    with open(DIR + "/implicit/train_time.pkl", 'rb') as fs:
         train_time = pickle.load(fs)
 
     train = train.tolil()
@@ -194,23 +194,23 @@ def splitAgain(dataset, cv):
     assert  np.sum(test.tocoo().data == 0)==0
     assert  (train+test).nnz == train.nnz+test.nnz
 
-    with open(DIR + "/implicit/train.csv", 'wb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'wb') as fs:
         pickle.dump(train, fs)
-    with open(DIR + "/implicit/test.csv", 'wb') as fs:
+    with open(DIR + "/implicit/test.pkl", 'wb') as fs:
         pickle.dump(test, fs)
-    with open(DIR + "/implicit/train_time.csv", 'wb') as fs:
+    with open(DIR + "/implicit/train_time.pkl", 'wb') as fs:
         pickle.dump(train_time, fs)
 
 
 def generateGraph(dataset, cv):
     DIR = os.path.join(os.getcwd(), "dataset", dataset)
-    with open(DIR + "/implicit/train.csv", 'rb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'rb') as fs:
         train = pickle.load(fs)
-    with open(DIR + "/implicit/trust.csv", 'rb') as fs:
+    with open(DIR + "/implicit/trust.pkl", 'rb') as fs:
         trustMat = pickle.load(fs)
-    with open(DIR + "/implicit/category.csv", 'rb') as fs:
+    with open(DIR + "/implicit/category.pkl", 'rb') as fs:
         categoryMat= pickle.load(fs)
-    with open(DIR + "/implicit/categoryDict.csv", 'rb') as fs:
+    with open(DIR + "/implicit/categoryDict.pkl", 'rb') as fs:
         categoryDict = pickle.load(fs)
     
     userNum, itemNum =  train.shape
@@ -249,9 +249,9 @@ def generateGraph(dataset, cv):
     
 def createCategoryDict(dataset, cv):
     DIR = os.path.join(os.getcwd(), "dataset", dataset)
-    with open(DIR + "/implicit/train.csv", 'rb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'rb') as fs:
         train = pickle.load(fs)
-    with open(DIR + "/implicit/category.csv", 'rb') as fs:
+    with open(DIR + "/implicit/category.pkl", 'rb') as fs:
         category = pickle.load(fs)
     
     assert category.shape[0] == train.shape[1]
@@ -266,17 +266,17 @@ def createCategoryDict(dataset, cv):
                 categoryDict[typeid].append(iid)
             else:
                 categoryDict[typeid] = [iid]
-    with open(DIR + "/implicit/categoryDict.csv", 'wb') as fs:
+    with open(DIR + "/implicit/categoryDict.pkl", 'wb') as fs:
         pickle.dump(categoryDict, fs)
 
 def testNegSample(dataset, cv):
     DIR = os.path.join(os.getcwd(), "dataset", dataset)
     #filter
-    with open(DIR + "/implicit/train.csv", 'rb') as fs:
+    with open(DIR + "/implicit/train.pkl", 'rb') as fs:
         train = pickle.load(fs)
-    with open(DIR + "/implicit/test.csv", 'rb') as fs:
+    with open(DIR + "/implicit/test.pkl", 'rb') as fs:
         test = pickle.load(fs)
-    with open(DIR + "/implicit/valid.csv", 'rb') as fs:
+    with open(DIR + "/implicit/valid.pkl", 'rb') as fs:
         valid = pickle.load(fs)
 
     train = train.todok()
@@ -310,9 +310,9 @@ def testNegSample(dataset, cv):
                 j = np.random.randint(valid.shape[1])
             valid_data.append([u, j])
     
-    with open(DIR + "/implicit/test_data.csv", 'wb') as fs:
+    with open(DIR + "/implicit/test_data.pkl", 'wb') as fs:
         pickle.dump(test_data, fs)
-    with open(DIR + "/implicit/valid_data.csv", 'wb') as fs:
+    with open(DIR + "/implicit/valid_data.pkl", 'wb') as fs:
         pickle.dump(valid_data, fs)
 
 

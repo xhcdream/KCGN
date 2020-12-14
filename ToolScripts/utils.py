@@ -41,15 +41,15 @@ def buildSubGraph(mat, subNode):
 def loadData(datasetStr):
     DIR = os.path.join(os.getcwd(), "dataset", datasetStr, "implicit")
     log(DIR)
-    with open(DIR + '/train.csv', 'rb') as fs:
+    with open(DIR + '/train.pkl', 'rb') as fs:
         trainMat = pk.load(fs)
-    with open(DIR + '/test_data.csv', 'rb') as fs:
+    with open(DIR + '/test_data.pkl', 'rb') as fs:
         testData = pk.load(fs)
-    with open(DIR + '/valid_data.csv', 'rb') as fs:
+    with open(DIR + '/valid_data.pkl', 'rb') as fs:
         validData = pk.load(fs)
-    with open(DIR + '/train_time.csv', 'rb') as fs:
+    with open(DIR + '/train_time.pkl', 'rb') as fs:
         trainTimeMat = pk.load(fs)
-    with open(DIR + '/trust.csv', 'rb') as fs:
+    with open(DIR + '/trust.pkl', 'rb') as fs:
         trustMat = pk.load(fs)
     return (trainMat, testData, validData, trainTimeMat, trustMat)
     

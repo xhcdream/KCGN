@@ -28,7 +28,7 @@ def creatMultiItemUserAdj(dataset, cv):
     multi_adj2 = sp.vstack([sp.hstack([a, multi_adj.T]), sp.hstack([multi_adj,b])])
 
     DIR = os.path.join(os.getcwd(), "dataset", dataset, 'implicit', "cv{0}".format(cv))
-    path = DIR + '/multi_item_adj.csv'
+    path = DIR + '/multi_item_adj.pkl'
     with open(path, 'wb') as fs:
         pickle.dump(multi_adj2.tocsr(), fs)
     print("create multi_item_feat")

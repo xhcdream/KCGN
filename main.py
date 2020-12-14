@@ -48,7 +48,7 @@ class Model():
             self.ii_graph = DGLGraph(iiMat)
 
             #get sub graph message
-            uu_subGraph_data = self.datasetDir + '/uuMat_subGraph_data.csv'
+            uu_subGraph_data = self.datasetDir + '/uuMat_subGraph_data.pkl'
             if self.args.clear == 1:
                 if os.path.exists(uu_subGraph_data):
                     log("clear uu sub graph message")
@@ -64,7 +64,7 @@ class Model():
                 with open(uu_subGraph_data, 'wb') as fs:
                     pickle.dump(data, fs)
             
-            ii_subGraph_data = self.datasetDir + '/iiMat_subGraph_data.csv'
+            ii_subGraph_data = self.datasetDir + '/iiMat_subGraph_data.pkl'
 
             if self.args.clear == 1:
                 if os.path.exists(ii_subGraph_data):
@@ -167,14 +167,7 @@ class Model():
     
     def getData(self, args):
         data = loadData(args.dataset)
-        if args.dataset == "Tianchi_time":
-            # interatctMat, validData = data
-            _, _, _, _, interatctMat, _, validData = data
-            trainMat = interatctMat
-        else:
-            trainMat, _, validData, _, _ = data
-
-        with open(self.datasetDir + '/multi_item_adj.csv', 'rb') as fs:
+        with open(self.datasetDir + '/multi_item_adj.pkl', 'rb') as fs:
             multi_adj_time = pickle.load(fs)
         with open(self.datasetDir + '/uu_vv_graph.pkl', 'rb') as fs:
             uu_vv_graph = pickle.load(fs)
@@ -225,7 +218,6 @@ class Model():
         return pred_i, pred_j
     
     def run(self):
-        #判断是导入模型还是重新训练模型
         self.prepareModel()
         if self.isLoadModel == True:
             self.loadModel(LOAD_MODEL_PATH)
@@ -234,10 +226,8 @@ class Model():
         cvWait = 0
         best_HR = 0.1
         for e in range(self.curEpoch, self.args.epochs+1):
-            #记录当前epoch,用于保存Model
             self.curEpoch = e
             log("**************************************************************")
-            #训练
             log("start train")
             epoch_loss, epoch_uu_dgi_loss, epoch_ii_dgi_loss = self.trainModel()
             log("end train")
@@ -280,7 +270,7 @@ class Model():
         
     def test(self):
         #load test dataset
-        with open(self.datasetDir + "/test_data.csv", 'rb') as fs:
+        with open(self.datasetDir + "/test_data.pkl", 'rb') as fs:
             test_data = pickle.load(fs)
         test_dataset = BPRData(test_data, self.itemNum, self.trainMat, 0, False)
         self.test_loader  = dataloader.DataLoader(test_dataset, batch_size=args.test_batch*101, shuffle=False, num_workers=0)
@@ -353,7 +343,6 @@ class Model():
             loss.backward()
             self.opt.step()
             # log('setp %d/%d, step_loss = %f'%(i, loss.item()), save=False, oneline=True)
-        log("finish train")
         return epoch_loss, epoch_uu_dgi_loss, epoch_ii_dgi_loss
 
     def validModel(self, data_loader, save=False):
@@ -363,19 +352,9 @@ class Model():
             user_embed, item_embed = self.model(self.uv_g, self.time_seq_tensor, self.out_dim, self.ratingClass, True)
         else:
             user_embed, item_embed = self.model(self.uv_g, None, self.out_dim, self.ratingClass, True)
-        # embeds = {
-        #     "user_embed": user_embed.detach().cpu().numpy(),
-        #     "item_embed": item_embed.detach().cpu().numpy(),
-        # }
-        # with open("Yelp_time_618151-embeds.pkl", 'wb') as fs:
-        #     pickle.dump(embeds, fs)
         for user, item_i in data_loader:
             user = user.long().cuda()
             item_i = item_i.long().cuda()
-            # if self.args.time == 1:
-            #     user_embed, item_embed = self.model(self.uv_g, self.time_seq_tensor, self.out_dim, self.ratingClass, True)
-            # else:
-            #     user_embed, item_embed = self.model(self.uv_g, None, self.out_dim, self.ratingClass, True)
             userEmbed = user_embed[user]
             testItemEmbed = item_embed[item_i]
             pred_i = t.sum(t.mul(userEmbed, testItemEmbed), dim=1)
@@ -397,7 +376,7 @@ class Model():
 
 
     def getModelName(self):
-        title = "SR-TIME_"
+        title = "KCGN_"
         ModelName = title + self.args.dataset + "_" + modelUTCStr + \
         "_reg_" + str(self.args.reg)+ \
         "_batch_" + str(self.args.batch) + \
@@ -462,9 +441,9 @@ class Model():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='SR-HGNN main.py')
+    parser = argparse.ArgumentParser(description='KCGN main.py')
     #dataset params
-    parser.add_argument('--dataset', type=str, default="Yelp", help="Epinions,Yelp,Tianchi")
+    parser.add_argument('--dataset', type=str, default="Yelp", help="Epinions,Yelp")
     parser.add_argument('--seed', type=int, default=29)
 
     parser.add_argument('--hide_dim', type=int, default=64)

@@ -1,5 +1,4 @@
 import networkx as nx
-# import matplotlib.pyplot as plt
 import torch as t
 from torch import nn
 from torch.nn import init
@@ -10,12 +9,6 @@ import math
 
 def message_func(edges):
     return {'m' : edges.src['n_f'] + edges.data['e_f']}
-    # return {'m' : edges.src['n_f']}
-
-def reduce_sum(nodes):
-    return {'n_f': t.sum(nodes.mailbox['m'], dim=1)}
-    # msgs = t.sum(nodes.mailbox['m'], dim=1)
-    # return {'n_f' : msgs}
 
 class MODEL(nn.Module):
     def __init__(self, args, userNum, itemNum, hide_dim, maxTime, interactionNum=5, layer=[16,16]):
@@ -49,8 +42,6 @@ class MODEL(nn.Module):
         return embedding_dict
     
     def forward(self, graph, time_seq, out_dim, rClass=5, isTrain=True):
-        # all_user_embeddings = []
-        # all_item_embeddings = []
         all_user_embeddings = [self.embedding_dict['user_emb']]
         all_item_embeddings = [self.embedding_dict['item_emb']]
         if len(self.layers) == 0:
@@ -68,15 +59,9 @@ class MODEL(nn.Module):
             else:
                 embeddings = layer(graph, embeddings[: self.userNum], embeddings[self.userNum: ], edge_feat)
             
-            # if isTrain:
-            #     embeddings = nn.Dropout(0.1)(embeddings)
-            # if norm == 1:
             norm_embeddings = F.normalize(embeddings, p=2, dim=1)
             all_user_embeddings += [norm_embeddings[: self.userNum]]
             all_item_embeddings += [norm_embeddings[self.userNum: ]]
-            # else:
-            #     all_user_embeddings += [embeddings[: self.userNum]]
-            #     all_item_embeddings += [embeddings[self.userNum: ]]
 
 
         user_embedding = t.cat(all_user_embeddings, 1)
@@ -154,16 +139,13 @@ class GCNLayer(nn.Module):
 
             return rst
             
-class RelTemporalEncoding(nn.Module):
-    '''
-        Implement the Temporal Encoding (Sinusoid) function.
-    '''
+class TimeEncoding(nn.Module):
     def __init__(self, n_hid, max_len = 240, dropout = 0.2):
-        super(RelTemporalEncoding, self).__init__()
-        # self.drop = nn.Dropout(dropout)
+        super(TimeEncoding, self).__init__()
         position = t.arange(0., max_len).unsqueeze(1)
+        # ref self-attention
         div_term = 1 / (10000 ** (t.arange(0., n_hid * 2, 2.)) / n_hid / 2)
-
+        
         # initializer = nn.init.xavier_uniform_
         # self.emb = nn.Parameter(initializer(t.empty(max_len, n_hid)))
         self.emb = nn.Embedding(max_len, n_hid * 2)
@@ -177,4 +159,3 @@ class RelTemporalEncoding(nn.Module):
 
     def forward(self, time):
         return self.lin(self.emb(time))
-        # return x + self.lin(self.drop(self.emb(t)))
