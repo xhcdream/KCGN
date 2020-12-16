@@ -28,7 +28,7 @@ class MODEL(nn.Module):
             init.xavier_uniform_(self.w)
 
         if self.addTime == 1:
-            self.t_e = RelTemporalEncoding(self.hide_dim, maxTime)
+            self.t_e = TimeEncoding(self.hide_dim, maxTime)
         self.layers = nn.ModuleList()
         for i in range(0, len(self.layer)-1):
                 self.layers.append(GCNLayer(self.layer[i], self.layer[i+1], self.addTime, weight=True, bias=False, activation=self.act))

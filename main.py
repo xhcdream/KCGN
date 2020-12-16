@@ -17,6 +17,7 @@ from ToolScripts.utils import buildSubGraph
 from ToolScripts.utils import sparse_mx_to_torch_sparse_tensor
 from ToolScripts.utils import mkdir
 from dgl import DGLGraph
+import dgl
 from MyGCN import MODEL
 from BPRData import BPRData
 import torch.utils.data as dataloader
@@ -36,7 +37,7 @@ class Model():
 
     def __init__(self, args, isLoad=False):
         self.args = args
-        self.datasetDir = os.path.join(os.getcwd(), "dataset", args.dataset, 'implicit')
+        self.datasetDir = os.path.join(os.getcwd(), "dataset", args.dataset)
         trainMat, validData, multi_adj_time, uuMat, iiMat = self.getData(args)
         self.userNum, self.itemNum = trainMat.shape
         log("uu num = %d"%(uuMat.nnz))
@@ -44,8 +45,19 @@ class Model():
         self.trainMat = trainMat
         if self.args.dgi == 1:
             log("dgi process...")
-            self.uu_graph = DGLGraph(uuMat)
-            self.ii_graph = DGLGraph(iiMat)
+
+            # self.uu_graph = DGLGraph(uuMat)
+            uuMat_edge_src, uuMat_edge_dst = uuMat.nonzero()
+            self.uu_graph = dgl.graph(data=(uuMat_edge_src, uuMat_edge_dst),
+                              idtype=t.int32,
+                              num_nodes=uuMat.shape[0],
+                              device=device_gpu)
+            # self.ii_graph = DGLGraph(iiMat)
+            iiMat_edge_src, iiMat_edge_dst = iiMat.nonzero()
+            self.ii_graph = dgl.graph(data=(iiMat_edge_src, iiMat_edge_dst),
+                              idtype=t.int32,
+                              num_nodes=iiMat.shape[0],
+                              device=device_gpu)
 
             #get sub graph message
             uu_subGraph_data = self.datasetDir + '/uuMat_subGraph_data.pkl'
@@ -134,9 +146,14 @@ class Model():
         self.ratingClass = np.unique(trainMat.data).size
         log("user num =%d, item num =%d"%(self.userNum, self.itemNum))
 
-        self.uv_g = DGLGraph()
-        self.uv_g.add_nodes(multi_adj_time_norm.shape[0])
-        self.uv_g.add_edges(edge_src, edge_dst)
+        # self.uv_g = DGLGraph()
+        # self.uv_g.add_nodes(multi_adj_time_norm.shape[0])
+        # self.uv_g.add_edges(edge_src, edge_dst)
+        self.uv_g = dgl.graph(data=(edge_src, edge_dst),
+                              idtype=t.int32,
+                              num_nodes=multi_adj_time_norm.shape[0],
+                              device=device_gpu)
+
 
         #train data
         train_u, train_v = self.trainMat.nonzero()
@@ -167,6 +184,7 @@ class Model():
     
     def getData(self, args):
         data = loadData(args.dataset)
+        trainMat, _, validData, _, _ = data
         with open(self.datasetDir + '/multi_item_adj.pkl', 'rb') as fs:
             multi_adj_time = pickle.load(fs)
         with open(self.datasetDir + '/uu_vv_graph.pkl', 'rb') as fs:

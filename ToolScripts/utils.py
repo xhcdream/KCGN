@@ -39,7 +39,7 @@ def buildSubGraph(mat, subNode):
 
 
 def loadData(datasetStr):
-    DIR = os.path.join(os.getcwd(), "dataset", datasetStr, "implicit")
+    DIR = os.path.join(os.getcwd(), "dataset", datasetStr)
     log(DIR)
     with open(DIR + '/train.pkl', 'rb') as fs:
         trainMat = pk.load(fs)
