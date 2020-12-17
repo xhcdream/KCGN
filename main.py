@@ -21,7 +21,7 @@ import dgl
 from MyGCN import MODEL
 from BPRData import BPRData
 import torch.utils.data as dataloader
-from DGI.dgi import DGI#version 0.4.3
+from DGI.dgi import DGI
 import evaluate
 import time
 import networkx as nx
