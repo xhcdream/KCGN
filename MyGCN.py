@@ -20,18 +20,16 @@ class MODEL(nn.Module):
         self.embedding_dict = self.init_weight(userNum, itemNum*interactionNum, hide_dim)
         self.args = args
         slope = self.args.slope
-        self.addTime = args.time
         # GCN activation is leakyReLU
         self.act = t.nn.LeakyReLU(negative_slope=slope)
         if self.args.fuse == "weight":
             self.w = nn.Parameter(t.Tensor(itemNum, interactionNum, 1))
             init.xavier_uniform_(self.w)
 
-        if self.addTime == 1:
-            self.t_e = TimeEncoding(self.hide_dim, maxTime)
+        self.t_e = TimeEncoding(self.hide_dim, maxTime)
         self.layers = nn.ModuleList()
         for i in range(0, len(self.layer)-1):
-                self.layers.append(GCNLayer(self.layer[i], self.layer[i+1], self.addTime, weight=True, bias=False, activation=self.act))
+                self.layers.append(GCNLayer(self.layer[i], self.layer[i+1], weight=True, bias=False, activation=self.act))
     
     def init_weight(self, userNum, itemNum, hide_dim):
         initializer = nn.init.xavier_uniform_
@@ -48,10 +46,7 @@ class MODEL(nn.Module):
             item_embedding = self.embedding_dict['item_emb'].view(-1, rClass, out_dim)
             ret_item_embedding = t.div(t.sum(item_embedding, dim=1), rClass)
             return self.embedding_dict['user_emb'], ret_item_embedding
-        if self.addTime == 1:
-            edge_feat = self.t_e(time_seq)
-        else:
-            edge_feat = None
+        edge_feat = self.t_e(time_seq)
 
         for i, layer in enumerate(self.layers):
             if i == 0:
@@ -82,13 +77,11 @@ class GCNLayer(nn.Module):
     def __init__(self,
                  in_feats,
                  out_feats,
-                 timeEdge,
                  weight=True,
                  bias=False,
                  activation=None):
         super(GCNLayer, self).__init__()
         self.bias = bias
-        self.addTime = timeEdge
         self._in_feats = in_feats
         self._out_feats = out_feats
         self.weight = weight
@@ -120,11 +113,8 @@ class GCNLayer(nn.Module):
             node_f = node_f * norm
 
             graph.ndata['n_f'] = node_f
-            if self.addTime == 1:
-                graph.edata['e_f'] = e_f
-                graph.update_all(message_func=message_func, reduce_func=fn.sum(msg='m', out='n_f'))
-            else:
-                graph.update_all(message_func=fn.copy_src(src='n_f', out='m'), reduce_func=fn.sum(msg='m', out='n_f'))
+            graph.edata['e_f'] = e_f
+            graph.update_all(message_func=message_func, reduce_func=fn.sum(msg='m', out='n_f'))
 
             rst = graph.ndata['n_f']
 

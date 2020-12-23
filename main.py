@@ -108,52 +108,35 @@ class Model():
             self.ii_dgi_node_mask = t.from_numpy(self.ii_dgi_node_mask).float().cuda()
         
         #norm time value
-        if self.args.time == 1:
-            log("time process")
-            self.time_step = self.args.time_step
-            log("time step = %.1f hour"%(self.time_step))
-            time_step = 3600*self.time_step
-            row, col = multi_adj_time.nonzero()
-            data = multi_adj_time.data
-            minUTC = data.min()
-            #data.min = 2
-            data = ((data-minUTC)/time_step).astype(np.int)+2
-            assert np.sum(row == col) == 0
-            multi_adj_time_norm = sp.coo_matrix((data, (row, col)), dtype=np.int, shape=multi_adj_time.shape).tocsr()
-            self.maxTime = multi_adj_time_norm.max() + 1
-            log("max time = %d"%(self.maxTime))
-            num = multi_adj_time_norm.shape[0]
-            multi_adj_time_norm = multi_adj_time_norm + sp.eye(num)
-            print("uv graph link num = %d"%(multi_adj_time_norm.nnz))
-        else:
-            self.maxTime = None
-            num = multi_adj_time.shape[0]
-            multi_adj_time = multi_adj_time + sp.eye(num)
-            multi_adj_time_norm = (multi_adj_time!=0) * 1
+        log("time process")
+        self.time_step = self.args.time_step
+        log("time step = %.1f hour"%(self.time_step))
+        time_step = 3600*self.time_step
+        row, col = multi_adj_time.nonzero()
+        data = multi_adj_time.data
+        minUTC = data.min()
+        #data.min = 2
+        data = ((data-minUTC)/time_step).astype(np.int)+2
+        assert np.sum(row == col) == 0
+        multi_adj_time_norm = sp.coo_matrix((data, (row, col)), dtype=np.int, shape=multi_adj_time.shape).tocsr()
+        self.maxTime = multi_adj_time_norm.max() + 1
+        log("max time = %d"%(self.maxTime))
+        num = multi_adj_time_norm.shape[0]
+        multi_adj_time_norm = multi_adj_time_norm + sp.eye(num)
+        print("uv graph link num = %d"%(multi_adj_time_norm.nnz))
 
         
-        # multi_adj = (multi_adj_time_norm!=0)
-        # self.v_u_adj = multi_adj[self.userNum:, 0:self.userNum]
-        # self.multi_item_mask = t.from_numpy(np.sum(self.v_u_adj,axis=1).A!=0).float().to(device_gpu)
-        
         edge_src, edge_dst = multi_adj_time_norm.nonzero()
-        # edge_src = multi_adj_time_norm.tocoo().row
-        # edge_dst = multi_adj_time_norm.tocoo().col
-        if self.args.time == 1:
-            time_seq = multi_adj_time_norm.tocoo().data
-            self.time_seq_tensor = t.from_numpy(time_seq.astype(np.float)).long().to(device_gpu)
+        time_seq = multi_adj_time_norm.tocoo().data
+        self.time_seq_tensor = t.from_numpy(time_seq.astype(np.float)).long().to(device_gpu)
         
         self.ratingClass = np.unique(trainMat.data).size
         log("user num =%d, item num =%d"%(self.userNum, self.itemNum))
 
-        # self.uv_g = DGLGraph()
-        # self.uv_g.add_nodes(multi_adj_time_norm.shape[0])
-        # self.uv_g.add_edges(edge_src, edge_dst)
         self.uv_g = dgl.graph(data=(edge_src, edge_dst),
                               idtype=t.int32,
                               num_nodes=multi_adj_time_norm.shape[0],
                               device=device_gpu)
-
 
         #train data
         train_u, train_v = self.trainMat.nonzero()
@@ -309,17 +292,7 @@ class Model():
             user = user.long().cuda()
             item_i = item_i.long().cuda()
             item_j = item_j.long().cuda()
-            if self.args.time == 1:
-                user_embed, item_embed = self.model(self.uv_g, self.time_seq_tensor, self.out_dim, self.ratingClass, True)
-            else:
-                user_embed, item_embed = self.model(self.uv_g, None, self.out_dim, self.ratingClass, True)
-            # item_muliti_embed = item_muliti_embed.view(-1, self.ratingClass, self.out_dim)
-            
-            # item_muliti_embed = item_muliti_embed*self.multi_item_mask
-            # item_embed = t.sum(item_muliti_embed, dim=1) / t.sum(self.multi_item_mask.view(-1,5), dim=1, keepdim=True)
-            
-            #TODO try self attention
-            # item_embed = t.div(t.sum(item_embed, dim=1), self.ratingClass)
+            user_embed, item_embed = self.model(self.uv_g, self.time_seq_tensor, self.out_dim, self.ratingClass, True)
             
             userEmbed = user_embed[user]
             posEmbed = item_embed[item_i]
@@ -366,10 +339,7 @@ class Model():
     def validModel(self, data_loader, save=False):
         HR, NDCG = [], []
         data = {}
-        if self.args.time == 1:
-            user_embed, item_embed = self.model(self.uv_g, self.time_seq_tensor, self.out_dim, self.ratingClass, True)
-        else:
-            user_embed, item_embed = self.model(self.uv_g, None, self.out_dim, self.ratingClass, True)
+        user_embed, item_embed = self.model(self.uv_g, self.time_seq_tensor, self.out_dim, self.ratingClass, True)
         for user, item_i in data_loader:
             user = user.long().cuda()
             item_i = item_i.long().cuda()
@@ -404,10 +374,8 @@ class Model():
         "_Layer_" + self.args.layer +\
         "_slope_" + str(self.args.slope) +\
         "_top_" + str(self.args.top_k) +\
-        "_fuse_" + self.args.fuse
-        if self.args.time == 1:
-            ModelName += "_timeStep_" + str(self.args.time_step)
-            ModelName += "_time"
+        "_fuse_" + self.args.fuse +\
+        "_timeStep_" + str(self.args.time_step)
         if self.args.dgi == 1:
             ModelName += "_dgi"
             ModelName += str(self.args.lam)
@@ -487,7 +455,6 @@ if __name__ == '__main__':
     parser.add_argument('--clear', type=int, default=0)
     parser.add_argument('--subNode', type=int, default=10)
 
-    parser.add_argument('--time', type=int, default=1)
     parser.add_argument('--time_step', type=float, default=360)
     parser.add_argument('--startTest', type=int, default=0)
 
