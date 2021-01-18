@@ -43,69 +43,68 @@ class Model():
         log("uu num = %d"%(uuMat.nnz))
         log("ii num = %d"%(iiMat.nnz))
         self.trainMat = trainMat
-        if self.args.dgi == 1:
-            log("dgi process...")
 
-            # self.uu_graph = DGLGraph(uuMat)
-            uuMat_edge_src, uuMat_edge_dst = uuMat.nonzero()
-            self.uu_graph = dgl.graph(data=(uuMat_edge_src, uuMat_edge_dst),
-                              idtype=t.int32,
-                              num_nodes=uuMat.shape[0],
-                              device=device_gpu)
-            # self.ii_graph = DGLGraph(iiMat)
-            iiMat_edge_src, iiMat_edge_dst = iiMat.nonzero()
-            self.ii_graph = dgl.graph(data=(iiMat_edge_src, iiMat_edge_dst),
-                              idtype=t.int32,
-                              num_nodes=iiMat.shape[0],
-                              device=device_gpu)
 
-            #get sub graph message
-            uu_subGraph_data = self.datasetDir + '/uuMat_subGraph_data.pkl'
-            if self.args.clear == 1:
-                if os.path.exists(uu_subGraph_data):
-                    log("clear uu sub graph message")
-                    os.remove(uu_subGraph_data)
+        # self.uu_graph = DGLGraph(uuMat)
+        uuMat_edge_src, uuMat_edge_dst = uuMat.nonzero()
+        self.uu_graph = dgl.graph(data=(uuMat_edge_src, uuMat_edge_dst),
+                            idtype=t.int32,
+                            num_nodes=uuMat.shape[0],
+                            device=device_gpu)
+        # self.ii_graph = DGLGraph(iiMat)
+        iiMat_edge_src, iiMat_edge_dst = iiMat.nonzero()
+        self.ii_graph = dgl.graph(data=(iiMat_edge_src, iiMat_edge_dst),
+                            idtype=t.int32,
+                            num_nodes=iiMat.shape[0],
+                            device=device_gpu)
 
+        #get sub graph message
+        uu_subGraph_data = self.datasetDir + '/uuMat_subGraph_data.pkl'
+        if self.args.clear == 1:
             if os.path.exists(uu_subGraph_data):
-                data = load(uu_subGraph_data)
-                self.uu_node_subGraph, self.uu_subGraph_adj, self.uu_dgi_node = data
-            else:
-                log("rebuild uu sub graph message")
-                _, self.uu_node_subGraph, self.uu_subGraph_adj, self.uu_dgi_node = buildSubGraph(uuMat, self.args.subNode)
-                data = (self.uu_node_subGraph, self.uu_subGraph_adj, self.uu_dgi_node)
-                with open(uu_subGraph_data, 'wb') as fs:
-                    pickle.dump(data, fs)
-            
-            ii_subGraph_data = self.datasetDir + '/iiMat_subGraph_data.pkl'
+                log("clear uu sub graph message")
+                os.remove(uu_subGraph_data)
 
-            if self.args.clear == 1:
-                if os.path.exists(ii_subGraph_data):
-                    log("clear ii sub graph message")
-                    os.remove(ii_subGraph_data)
+        if os.path.exists(uu_subGraph_data):
+            data = load(uu_subGraph_data)
+            self.uu_node_subGraph, self.uu_subGraph_adj, self.uu_dgi_node = data
+        else:
+            log("rebuild uu sub graph message")
+            _, self.uu_node_subGraph, self.uu_subGraph_adj, self.uu_dgi_node = buildSubGraph(uuMat, self.args.subNode)
+            data = (self.uu_node_subGraph, self.uu_subGraph_adj, self.uu_dgi_node)
+            with open(uu_subGraph_data, 'wb') as fs:
+                pickle.dump(data, fs)
+        
+        ii_subGraph_data = self.datasetDir + '/iiMat_subGraph_data.pkl'
 
+        if self.args.clear == 1:
             if os.path.exists(ii_subGraph_data):
-                data = load(ii_subGraph_data)
-                self.ii_node_subGraph, self.ii_subGraph_adj, self.ii_dgi_node = data
-            else:
-                log("rebuild ii sub graph message")
-                _, self.ii_node_subGraph, self.ii_subGraph_adj, self.ii_dgi_node = buildSubGraph(iiMat, self.args.subNode)
-                data = (self.ii_node_subGraph, self.ii_subGraph_adj, self.ii_dgi_node)
-                with open(ii_subGraph_data, 'wb') as fs:
-                    pickle.dump(data, fs)
+                log("clear ii sub graph message")
+                os.remove(ii_subGraph_data)
 
-            self.uu_subGraph_adj_tensor = sparse_mx_to_torch_sparse_tensor(self.uu_subGraph_adj).cuda()
-            self.uu_subGraph_adj_norm = t.from_numpy(np.sum(self.uu_subGraph_adj, axis=1)).float().cuda()
+        if os.path.exists(ii_subGraph_data):
+            data = load(ii_subGraph_data)
+            self.ii_node_subGraph, self.ii_subGraph_adj, self.ii_dgi_node = data
+        else:
+            log("rebuild ii sub graph message")
+            _, self.ii_node_subGraph, self.ii_subGraph_adj, self.ii_dgi_node = buildSubGraph(iiMat, self.args.subNode)
+            data = (self.ii_node_subGraph, self.ii_subGraph_adj, self.ii_dgi_node)
+            with open(ii_subGraph_data, 'wb') as fs:
+                pickle.dump(data, fs)
 
-            self.ii_subGraph_adj_tensor = sparse_mx_to_torch_sparse_tensor(self.ii_subGraph_adj).cuda()
-            self.ii_subGraph_adj_norm = t.from_numpy(np.sum(self.ii_subGraph_adj, axis=1)).float().cuda()
+        self.uu_subGraph_adj_tensor = sparse_mx_to_torch_sparse_tensor(self.uu_subGraph_adj).cuda()
+        self.uu_subGraph_adj_norm = t.from_numpy(np.sum(self.uu_subGraph_adj, axis=1)).float().cuda()
 
-            self.uu_dgi_node_mask = np.zeros(self.userNum)
-            self.uu_dgi_node_mask[self.uu_dgi_node] = 1
-            self.uu_dgi_node_mask = t.from_numpy(self.uu_dgi_node_mask).float().cuda()
+        self.ii_subGraph_adj_tensor = sparse_mx_to_torch_sparse_tensor(self.ii_subGraph_adj).cuda()
+        self.ii_subGraph_adj_norm = t.from_numpy(np.sum(self.ii_subGraph_adj, axis=1)).float().cuda()
 
-            self.ii_dgi_node_mask = np.zeros(self.itemNum)
-            self.ii_dgi_node_mask[self.ii_dgi_node] = 1
-            self.ii_dgi_node_mask = t.from_numpy(self.ii_dgi_node_mask).float().cuda()
+        self.uu_dgi_node_mask = np.zeros(self.userNum)
+        self.uu_dgi_node_mask[self.uu_dgi_node] = 1
+        self.uu_dgi_node_mask = t.from_numpy(self.uu_dgi_node_mask).float().cuda()
+
+        self.ii_dgi_node_mask = np.zeros(self.itemNum)
+        self.ii_dgi_node_mask[self.ii_dgi_node] = 1
+        self.ii_dgi_node_mask = t.from_numpy(self.ii_dgi_node_mask).float().cuda()
         
         #norm time value
         log("time process")
@@ -191,22 +190,19 @@ class Model():
             self.maxTime, self.ratingClass, self.layer).cuda()
 
 
-        if self.args.dgi == 1:
-            if self.args.dgi_graph_act == "sigmoid":
-                dgiGraphAct = nn.Sigmoid()
-            elif self.args.dgi_graph_act == "tanh":
-                dgiGraphAct = nn.Tanh()
+        if self.args.dgi_graph_act == "sigmoid":
+            dgiGraphAct = nn.Sigmoid()
+        elif self.args.dgi_graph_act == "tanh":
+            dgiGraphAct = nn.Tanh()
 
-            self.uu_dgi = DGI(self.uu_graph, self.out_dim, self.out_dim, nn.PReLU(), dgiGraphAct).cuda()
-            self.ii_dgi = DGI(self.ii_graph, self.out_dim, self.out_dim, nn.PReLU(), dgiGraphAct).cuda()
-            
-            self.opt = t.optim.Adam([
-                {'params': self.model.parameters(), 'weight_decay': 0},
-                {'params': self.uu_dgi.parameters(), 'weight_decay': 0},
-                {'params': self.ii_dgi.parameters(), 'weight_decay': 0},
-            ], lr=self.args.lr)
-        else:
-            self.opt = t.optim.Adam(self.model.parameters(), lr = self.args.lr, weight_decay=0)
+        self.uu_dgi = DGI(self.uu_graph, self.out_dim, self.out_dim, nn.PReLU(), dgiGraphAct).cuda()
+        self.ii_dgi = DGI(self.ii_graph, self.out_dim, self.out_dim, nn.PReLU(), dgiGraphAct).cuda()
+        
+        self.opt = t.optim.Adam([
+            {'params': self.model.parameters(), 'weight_decay': 0},
+            {'params': self.uu_dgi.parameters(), 'weight_decay': 0},
+            {'params': self.ii_dgi.parameters(), 'weight_decay': 0},
+        ], lr=self.args.lr)
 
     def adjust_learning_rate(self, opt, epoch):
         for param_group in opt.param_groups:
@@ -305,28 +301,27 @@ class Model():
 
             loss = 0.5*(bprloss + self.args.reg * regLoss)/self.args.batch
 
-            if self.args.dgi == 1:
-                uu_dgi_loss = 0
-                ii_dgi_loss = 0
-                if self.args.lam[0] != 0:
-                    uu_dgi_pos_loss, uu_dgi_neg_loss = self.uu_dgi(user_embed, self.uu_subGraph_adj_tensor, \
-                        self.uu_subGraph_adj_norm, self.uu_node_subGraph, self.uu_dgi_node)
-                    userMask = t.zeros(self.userNum).cuda()
-                    userMask[user] = 1
-                    userMask = userMask * self.uu_dgi_node_mask
-                    uu_dgi_loss = ((uu_dgi_pos_loss*userMask).sum() + (uu_dgi_neg_loss*userMask).sum())/t.sum(userMask)
-                    epoch_uu_dgi_loss += uu_dgi_loss.item()
+            uu_dgi_loss = 0
+            ii_dgi_loss = 0
+            if self.args.lam[0] != 0:
+                uu_dgi_pos_loss, uu_dgi_neg_loss = self.uu_dgi(user_embed, self.uu_subGraph_adj_tensor, \
+                    self.uu_subGraph_adj_norm, self.uu_node_subGraph, self.uu_dgi_node)
+                userMask = t.zeros(self.userNum).cuda()
+                userMask[user] = 1
+                userMask = userMask * self.uu_dgi_node_mask
+                uu_dgi_loss = ((uu_dgi_pos_loss*userMask).sum() + (uu_dgi_neg_loss*userMask).sum())/t.sum(userMask)
+                epoch_uu_dgi_loss += uu_dgi_loss.item()
 
-                if self.args.lam[1] != 0:
-                    ii_dgi_pos_loss, ii_dgi_neg_loss = self.ii_dgi(item_embed, self.ii_subGraph_adj_tensor, \
-                        self.ii_subGraph_adj_norm, self.ii_node_subGraph, self.ii_dgi_node)
-                    iiMask = t.zeros(self.itemNum).cuda()
-                    iiMask[item_i] = 1
-                    iiMask[item_j] = 1
-                    iiMask = iiMask * self.ii_dgi_node_mask
-                    ii_dgi_loss = ((ii_dgi_pos_loss*iiMask).sum() + (ii_dgi_neg_loss*iiMask).sum())/t.sum(iiMask)
-                    epoch_ii_dgi_loss += ii_dgi_loss.item()
-                loss = loss + self.args.lam[0] * uu_dgi_loss + self.args.lam[1] * ii_dgi_loss
+            if self.args.lam[1] != 0:
+                ii_dgi_pos_loss, ii_dgi_neg_loss = self.ii_dgi(item_embed, self.ii_subGraph_adj_tensor, \
+                    self.ii_subGraph_adj_norm, self.ii_node_subGraph, self.ii_dgi_node)
+                iiMask = t.zeros(self.itemNum).cuda()
+                iiMask[item_i] = 1
+                iiMask[item_j] = 1
+                iiMask = iiMask * self.ii_dgi_node_mask
+                ii_dgi_loss = ((ii_dgi_pos_loss*iiMask).sum() + (ii_dgi_neg_loss*iiMask).sum())/t.sum(iiMask)
+                epoch_ii_dgi_loss += ii_dgi_loss.item()
+            loss = loss + self.args.lam[0] * uu_dgi_loss + self.args.lam[1] * ii_dgi_loss
 
             epoch_loss += bprloss.item()
 
@@ -375,11 +370,8 @@ class Model():
         "_slope_" + str(self.args.slope) +\
         "_top_" + str(self.args.top_k) +\
         "_fuse_" + self.args.fuse +\
-        "_timeStep_" + str(self.args.time_step)
-        if self.args.dgi == 1:
-            ModelName += "_dgi"
-            ModelName += str(self.args.lam)
-            ModelName += str(self.args.dgi_graph_act)
+        "_timeStep_" + str(self.args.time_step) +\
+        "_lam_" + str(self.args.lam) + str(self.args.dgi_graph_act)
         return ModelName
 
 
