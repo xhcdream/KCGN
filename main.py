@@ -441,7 +441,6 @@ if __name__ == '__main__':
     parser.add_argument('--top_k', type=int, default=10)
     parser.add_argument('--fuse', type=str, default="mean", help="mean or weight")
 
-    parser.add_argument('--dgi', type=int, default=1)
     parser.add_argument('--dgi_graph_act', type=str, default="sigmoid", help="sigmoid or tanh")
     parser.add_argument('--lam', type=str, default='[0.1,0.001]')
     parser.add_argument('--clear', type=int, default=0)
